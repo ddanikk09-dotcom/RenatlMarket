@@ -1,54 +1,84 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Mini App</title>
+  <meta charset="UTF-8">
+  <title>Mini App NFT</title>
+  <style>
+    body { margin:0; font-family: Arial; }
 
-<style>
-  body {
-    margin: 0;
-    background: #111;
-  }
+    /* Loader на весь экран */
+    #loader {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
 
-  #loader {
-    position: fixed;
-    inset: 0;
-    background: #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-  }
+    .spinner {
+      width: 60px;
+      height: 60px;
+      border: 6px solid #222;
+      border-top: 6px solid #fff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
 
-  .spinner {
-    width: 60px;
-    height: 60px;
-    border: 6px solid #222;
-    border-top: 6px solid white;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-</style>
-
+    /* Скрываем интерфейс до конца загрузки */
+    #app {
+      display: none;
+      padding: 20px;
+      background: #111;
+      color: #fff;
+    }
+  </style>
 </head>
 <body>
 
+<!-- Loader -->
 <div id="loader">
   <div class="spinner"></div>
 </div>
 
-<h1 style="color:white;text-align:center;margin-top:100px;">
-  Mini App загрузилась
-</h1>
+<!-- Основной интерфейс -->
+<div id="app">
+  <h1 style="text-align:center;">Mini App NFT</h1>
+  <ul id="nft-list"></ul>
+</div>
 
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
-  setTimeout(() => {
-    document.getElementById("loader").remove();
-  }, 2000);
+const loader = document.getElementById("loader");
+const app = document.getElementById("app");
+
+// Сообщаем Telegram, что Mini App готов
+Telegram.WebApp.ready();
+
+// Пример: имитация загрузки данных
+setTimeout(() => {
+  loader.remove(); // убираем черный фон и кружок
+  app.style.display = "block"; // показываем интерфейс
+}, 2000);
+
+// Если у вас есть реальный fetch с backend, используйте вместо setTimeout:
+// fetch('https://ваш-домен.vercel.app/backend/api/nfts')
+// .then(res => res.json())
+// .then(data => {
+// const list = document.getElementById("nft-list");
+// data.forEach(nft => {
+// const li = document.createElement("li");
+// li.innerHTML = `<img src="${nft.image}" width="80"> ${nft.name}`;
+// list.appendChild(li);
+// });
+// })
+// .finally(() => {
+// loader.remove();
+// app.style.display = "block";
+// });
 </script>
 
 </body>
