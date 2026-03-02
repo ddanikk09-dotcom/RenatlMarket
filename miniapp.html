@@ -2,72 +2,187 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Mini App NFT</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rental Market</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
 <style>
-  body { margin:0; font-family:Arial, sans-serif; background:#111; color:#fff; }
-  #loader {
-    position: fixed; inset:0;
-    background:#000; display:flex; justify-content:center; align-items:center; z-index:9999;
-  }
-  .spinner {
-    width:60px; height:60px;
-    border:6px solid #222; border-top:6px solid #fff;
-    border-radius:50%;
-    animation:spin 1s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  #app { display:none; padding:20px; }
-  ul { list-style:none; padding:0; }
-  li { margin:10px 0; display:flex; align-items:center; }
-  img { margin-right:10px; border-radius:5px; }
+:root{
+  --bg:#0f0f12; --card:#1a1b20; --card2:#20222a; --border:#2a2c35; 
+  --accent:#2b8cff; --text:#ffffff; --muted:#8b8e98; --green:#22c55e;
+  --red:#ef4444; --yellow:#facc15;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;}
+html,body{height:100%;background:var(--bg);color:var(--text);}
+button{cursor:pointer;border:none;outline:none;font-family:inherit;}
+.app{min-height:100vh;display:flex;flex-direction:column;}
+.content{flex:1;padding:16px;padding-bottom:200px;animation:fade .25s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0);}}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.logo{font-weight:700;font-size:20px;}
+.balance{background:var(--card);padding:8px 14px;border-radius:20px;border:1px solid var(--border);font-weight:600;}
+.search{background:var(--card);padding:10px 14px;border-radius:14px;border:1px solid var(--border);margin-bottom:10px;}
+.search input{width:100%;background:none;border:none;outline:none;color:var(--text);font-size:14px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;}
+.card{background:var(--card);border-radius:18px;padding:10px;border:1px solid var(--border);transition:.25s;cursor:pointer;display:flex;flex-direction:column;align-items:center;opacity:0;transform:translateY(20px);}
+.card.show{opacity:1;transform:translateY(0);}
+.card img{width:100%;border-radius:14px;}
+.card-title{font-weight:600;margin-top:6px;text-align:center;font-size:14px;}
+.card-sub{font-size:12px;color:var(--muted);text-align:center;}
+.button{background:var(--accent);padding:12px;border-radius:14px;text-align:center;font-weight:600;margin-top:12px;cursor:pointer;}
+.button-red{background:var(--red);}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;z-index:1000;}
+.modal-content{background:var(--card2);width:100%;border-radius:20px 20px 0 0;padding:16px;animation:slide .2s ease;}
+@keyframes slide{from{transform:translateY(100%)}to{transform:translateY(0);}}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#14151a;display:flex;justify-content:space-around;padding:10px 0;border-top:1px solid var(--border);}
+.nav-item{font-size:12px;color:var(--muted);cursor:pointer;text-align:center;}
+.nav-item.active{color:var(--accent);}
+.hidden{display:none;}
+.profile-header{display:flex;align-items:center;margin-bottom:12px;}
+.profile-avatar{width:50px;height:50px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;margin-right:12px;font-weight:700;font-size:18px;}
+.profile-info{flex:1;}
+.profile-username{font-weight:600;font-size:16px;}
+.profile-nft-balance{font-size:14px;color:var(--muted);}
+.progress-container{background:var(--card);border-radius:10px;overflow:hidden;margin-top:6px;}
+.progress-bar{height:8px;background:var(--accent);width:0%;transition:.3s;}
+.pagination{display:flex;justify-content:center;margin-top:12px;}
+.page-btn{padding:6px 12px;margin:0 4px;border-radius:6px;background:var(--card);cursor:pointer;transition:.15s;}
+.page-btn.active{background:var(--accent);}
+.filter-bar{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;}
+.filter-btn{padding:6px 12px;border-radius:10px;background:var(--card);cursor:pointer;white-space:nowrap;}
+.filter-btn.active{background:var(--accent);}
 </style>
 </head>
 <body>
+<div class="app">
+<div class="content">
+<div class="header">
+  <div class="logo" id="page-title">Главная</div>
+  <div class="balance" id="balance">0 NFT</div>
+</div>
+<div id="wallet-status" style="margin-bottom:12px;color:var(--muted);font-size:14px;">Подключите Telegram аккаунт</div>
 
-<!-- Loader -->
-<div id="loader"><div class="spinner"></div></div>
-
-<!-- Основной интерфейс -->
-<div id="app">
-  <h1 style="text-align:center;">Ваши NFT</h1>
-  <ul id="nft-list"></ul>
+<div id="homePage">
+  <div class="filter-bar" id="homeFilters"></div>
+  <div class="grid" id="homeGrid"></div>
+  <div class="pagination" id="homePagination"></div>
 </div>
 
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<div id="marketPage" class="hidden">
+  <div class="search"><input type="text" id="searchInput" placeholder="Поиск NFT"></div>
+  <div class="filter-bar" id="marketFilters"></div>
+  <div class="grid" id="marketGrid"></div>
+  <div class="pagination" id="marketPagination"></div>
+</div>
+
+<div id="myNFTPage" class="hidden">
+  <div class="filter-bar" id="myNFTFilters"></div>
+  <div class="grid" id="myNFTGrid"></div>
+  <div class="pagination" id="myNFTPagination"></div>
+  <div class="button" onclick="refreshMyNFTs()">Обновить</div>
+</div>
+
+<div id="sellPage" class="hidden">
+  <p>Выберите NFT для продажи</p>
+  <div class="grid" id="sellGrid"></div>
+</div>
+
+<div id="profilePage" class="hidden">
+  <div class="profile-header">
+    <div class="profile-avatar" id="profile-avatar">👤</div>
+    <div class="profile-info">
+      <div class="profile-username" id="profile-username">Username</div>
+      <div class="profile-nft-balance" id="profile-balance">NFT: 0</div>
+      <div class="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
+    </div>
+  </div>
+  <p>Статистика и достижения</p>
+</div>
+</div>
+
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="switchPage('homePage', this)">Главная</div>
+  <div class="nav-item" onclick="switchPage('marketPage', this)">Маркет</div>
+  <div class="nav-item" onclick="switchPage('myNFTPage', this)">Мои NFT</div>
+  <div class="nav-item" onclick="switchPage('sellPage', this)">Продать</div>
+  <div class="nav-item" onclick="switchPage('profilePage', this)">Профиль</div>
+</div>
+
+<div class="modal" id="modal"><div class="modal-content" id="modalContent"></div></div>
+
 <script>
-const loader = document.getElementById('loader');
-const app = document.getElementById('app');
+// ================= TELEGRAM INIT =================
+const tg = window.Telegram.WebApp;
+tg.ready(); tg.expand();
+if(tg.requestFullscreen) tg.requestFullscreen();
+const telegramUser = tg.initDataUnsafe.user || {id:0, username:'unknown'};
+document.getElementById("wallet-status").innerText = `Привет, ${telegramUser.username}`;
+document.getElementById("profile-username").innerText = telegramUser.username;
 
-// Telegram Mini App готов
-Telegram.WebApp.ready();
-
-// Функция имитации загрузки NFT (замените на fetch с backend)
-function loadNFTs() {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      resolve([
-        { name:'NFT 1', image:'https://via.placeholder.com/80' },
-        { name:'NFT 2', image:'https://via.placeholder.com/80' },
-        { name:'NFT 3', image:'https://via.placeholder.com/80' }
-      ]);
-    }, 2000);
-  });
+// ================= DATA =================
+let categories = ["Dragon","Robot","Cat"];
+let marketNFTs = [];
+let myNFTs = [];
+for(let i=1;i<=120;i++){
+  let color=((i*123456)%0xFFFFFF).toString(16).padStart(6,'0');
+  let cat=categories[i%3];
+  marketNFTs.push({id:i,name:`${cat} #${i}`,image:`https://via.placeholder.com/300x200/${color}/ffffff?text=${cat}+${i}`,category:cat});
 }
 
-// Загрузка и отображение NFT
-loadNFTs().then(data => {
-  const list = document.getElementById('nft-list');
-  data.forEach(nft => {
-    const li = document.createElement('li');
-    li.innerHTML = `<img src="${nft.image}" width="80">${nft.name}`;
-    list.appendChild(li);
-  });
-}).finally(() => {
-  // Убираем loader, показываем интерфейс
-  loader.remove();
-  app.style.display = 'block';
-});
-</script>
+// ================= PAGINATION =================
+let pageSize=12;
+let currentPages={home:1,market:1,myNFT:1};
 
+// ================= HELPERS =================
+function paginate(list,page){const start=(page-1)*pageSize;return list.slice(start,start+pageSize);}
+function renderPagination(list,page,containerId,renderFunc){const pages=Math.ceil(list.length/pageSize);const container=document.getElementById(containerId);container.innerHTML="";for(let i=1;i<=pages;i++){let btn=document.createElement("div");btn.className="page-btn "+(i===page?"active":"");btn.innerText=i;btn.onclick=()=>{currentPages[containerId]=i;renderFunc();};container.appendChild(btn);}}
+
+// ================= GRID =================
+function renderGrid(list,gridId){const grid=document.getElementById(gridId);grid.innerHTML="";list.forEach((nft,i)=>{let card=document.createElement("div");card.className="card";setTimeout(()=>{card.classList.add("show");},i*20);card.innerHTML=`<img src="${nft.image}"><div class="card-title">${nft.name}</div><div class="card-sub">${nft.category}</div>`;card.onclick=()=>openModal(nft.id);grid.appendChild(card);});}
+
+// ================= FILTERS =================
+let activeFilters={home:null,market:null,myNFT:null};
+function filterList(list,filter){return filter?list.filter(n=>n.category===filter):list;}
+function renderFilters(containerId,callback){const container=document.getElementById(containerId);container.innerHTML="";categories.forEach(cat=>{const btn=document.createElement("div");btn.className="filter-btn";btn.innerText=cat;btn.onclick=()=>{Array.from(container.children).forEach(c=>c.classList.remove("active"));btn.classList.add("active");callback(cat);};container.appendChild(btn);});}
+
+// ================= RENDER FUNCTIONS =================
+function renderHome(){let filtered=filterList(marketNFTs,activeFilters.home);const paginated=paginate(filtered,currentPages.home);renderGrid(paginated,"homeGrid");renderPagination(filtered,currentPages.home,"homePagination",renderHome);}
+function renderMarket(){let filtered=filterList(marketNFTs,activeFilters.market);const searchVal=document.getElementById("searchInput").value.toLowerCase();filtered=filtered.filter(n=>n.name.toLowerCase().includes(searchVal));const paginated=paginate(filtered,currentPages.market);renderGrid(paginated,"marketGrid");renderPagination(filtered,currentPages.market,"marketPagination",renderMarket);}
+function renderMyNFTs(){let filtered=filterList(myNFTs,activeFilters.myNFT);const paginated=paginate(filtered,currentPages.myNFT);renderGrid(paginated,"myNFTGrid");renderPagination(filtered,currentPages.myNFT,"myNFTPagination",renderMyNFTs);renderGrid(filtered,"sellGrid");updateBalance();}
+
+// ================= NAVIGATION =================
+function switchPage(pageId,el){["homePage","marketPage","myNFTPage","sellPage","profilePage"].forEach(p=>document.getElementById(p).classList.add("hidden"));document.getElementById(pageId).classList.remove("hidden");document.getElementById("page-title").innerText=el.innerText;document.querySelectorAll(".nav-item").forEach(i=>i.classList.remove("active"));el.classList.add("active");}
+
+// ================= MODAL =================
+function openModal(id){const nft=[...marketNFTs,...myNFTs].find(n=>n.id===id);const modal=document.getElementById("modal");const content=document.getElementById("modalContent");content.innerHTML=`<h3>${nft.name}</h3><img src="${nft.image}" style="width:100%;border-radius:14px;margin:10px 0"><p>Действия с NFT:</p><div class="button" onclick="receiveNFT(${nft.id})">Получить NFT</div><div class="button button-red" onclick="sellNFT(${nft.id})">Продать NFT</div>`;modal.style.display="flex";}
+document.getElementById("modal").addEventListener("click",e=>{if(e.target.id==="modal")e.target.style.display="none";});
+function closeModal(){document.getElementById("modal").style.display="none";}
+
+// ================= RECEIVE/SELL =================
+function receiveNFT(id){const nft=marketNFTs.find(n=>n.id===id);if(!nft)return;if(!myNFTs.find(n=>n.id===id))myNFTs.push(nft);renderAll();closeModal();}
+function sellNFT(id){myNFTs=myNFTs.filter(n=>n.id!==id);renderAll();closeModal();}
+
+// ================= BALANCE/PROGRESS =================
+function updateBalance(){const bal=myNFTs.length;document.getElementById("balance").innerText=`${bal} NFT`;document.getElementById("profile-balance").innerText=`NFT: ${bal}`;}
+function updateProgress(){const val=Math.min(myNFTs.length,100);document.getElementById("progress-bar").style.width=`${val}%`;}
+
+// ================= REFRESH / SEARCH =================
+function refreshMyNFTs(){alert("Обновление завершено");}
+document.getElementById("searchInput").addEventListener("input",()=>{currentPages.market=1;renderMarket();});
+
+// ================= INIT =================
+function renderAll(){
+  renderHome();
+  renderMarket();
+  renderMyNFTs();
+  updateProgress();
+  renderFilters("homeFilters",cat=>{activeFilters.home=cat;currentPages.home=1;renderHome();});
+  renderFilters("marketFilters",cat=>{activeFilters.market=cat;currentPages.market=1;renderMarket();});
+  renderFilters("myNFTFilters",cat=>{activeFilters.myNFT=cat;currentPages.myNFT=1;renderMyNFTs();});
+}
+
+renderAll();
+</script>
 </body>
 </html>
