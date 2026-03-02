@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Marketplace</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Marketplace</h1>
+  <button id="connectWallet">Connect Wallet</button>
+</header>
+
+<section id="marketGrid"></section>
+
+<footer>
+  <button id="navMarket">Market</button>
+  <button id="navMyItems">My Items</button>
+</footer>
+
+<script src="app.js"></script>
+<script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+<script>
+const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+  manifestUrl: "https://ВАШ-ПУБЛИЧНЫЙ-URL/tonconnect-manifest.json",
+  buttonRootId: "connectWallet"
+});
+
+tonConnectUI.on("connect", wallet => {
+  fetch("https://ВАШ-BACKEND-URL/registerWallet", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({wallet: wallet.account, telegramId: window.telegramChatId})
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Items</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>My NFT Items</h1>
+  <button id="connectWallet">Connect Wallet</button>
+</header>
+
+<section id="myItemsGrid"></section>
+
+<script src="myitems.js"></script>
+<script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+<script>
+const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+  manifestUrl: "https://ВАШ-ПУБЛИЧНЫЙ-URL/tonconnect-manifest.json",
+  buttonRootId: "connectWallet"
+});
+
+tonConnectUI.on("connect", wallet => {
+  fetch("https://ВАШ-BACKEND-URL/registerWallet", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({wallet: wallet.account, telegramId: window.telegramChatId})
+  });
+});
+</script>
+</body>
+</html>
+
