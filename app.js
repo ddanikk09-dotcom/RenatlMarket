@@ -1,6 +1,6 @@
 const marketGrid = document.getElementById("marketGrid");
 
-fetch("https://renatl-market.vercel.app/")
+fetch("https://renatl-market-njda.vercel.app/")
   .then(res => res.json())
   .then(data => {
     data.forEach(nft => {
